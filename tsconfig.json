@@ -1,0 +1,124 @@
+{
+  "compilerOptions": {
+    // 指定根目录，所有相对路径都基于此目录解析
+    // 📖 https://www.typescriptlang.org/tsconfig/#baseUrl
+    "ignoreDeprecations": "6.0",
+    "baseUrl": ".",
+
+    // 输出目录，编译后的 JavaScript 文件会放在这里
+    // 📖 https://www.typescriptlang.org/tsconfig/#outDir
+    // "outDir": "temp",
+
+    // 是否生成对应的 .map 源映射文件（此处关闭）
+    // 📖 https://www.typescriptlang.org/tsconfig/#sourceMap
+    "sourceMap": false,
+
+    // 编译后的目标 ECMAScript 版本
+    // 📖 https://www.typescriptlang.org/tsconfig/#target
+    "target": "es2016",
+
+    // 设置输出文件的换行符格式，LF 是 Unix/Linux/macOS 标准
+    // 📖 https://www.typescriptlang.org/tsconfig/#newLine
+    "newLine": "LF",
+
+    // 是否使用 ES  proposals 中的 define 语义实现 class fields
+    // false 表示使用传统的赋值方式，避免某些兼容性问题
+    // 📖 https://www.typescriptlang.org/tsconfig/#useDefineForClassFields
+    "useDefineForClassFields": false,
+
+    // 指定使用的模块系统类型，esnext 表示使用最新的 ES 模块
+    // 📖 https://www.typescriptlang.org/tsconfig/#module
+    "module": "esnext",
+
+    // 模块解析策略，bundler 适合现代打包工具（如 Vite、Rollup）
+    // 📖 https://www.typescriptlang.org/tsconfig/#moduleResolution
+    "moduleResolution": "bundler",
+
+    // 是否允许导入 JavaScript 文件
+    // false 表示只处理 TypeScript 文件
+    // 📖 https://www.typescriptlang.org/tsconfig/#allowJs
+    "allowJs": false,
+
+    // 启用所有严格类型检查选项（包括 noImplicitAny、strictNullChecks 等）
+    // 📖 https://www.typescriptlang.org/tsconfig/#strict
+    "strict": true,
+
+    // 当变量或函数未使用时报错，有助于清理无用代码
+    // 📖 https://www.typescriptlang.org/tsconfig/#noUnusedLocals
+    "noUnusedLocals": true,
+
+    // 启用实验性的装饰器语法（用于类装饰器、方法装饰器等）
+    // 📖 https://www.typescriptlang.org/tsconfig/#experimentalDecorators
+    "experimentalDecorators": true,
+
+    // 允许导入 .json 文件作为模块
+    // 📖 https://www.typescriptlang.org/tsconfig/#resolveJsonModule
+    "resolveJsonModule": true,
+
+    // 隔离模块编译，确保每个模块独立编译，提高构建速度
+    // 📖 https://www.typescriptlang.org/tsconfig/#isolatedModules
+    "isolatedModules": true,
+
+    // 跳过声明文件（.d.ts）的类型检查，加快编译速度
+    // 📖 https://www.typescriptlang.org/tsconfig/#skipLibCheck
+    "skipLibCheck": true,
+
+    // 启用 ES 模块与 CommonJS 模块的互操作性
+    // 允许 import default from commonjs 模块
+    // 📖 https://www.typescriptlang.org/tsconfig/#esModuleInterop
+    "esModuleInterop": true,
+
+    // 是否移除注释（false 表示保留注释）
+    // 📖 https://www.typescriptlang.org/tsconfig/#removeComments
+    "removeComments": false,
+
+    // JSX 代码的处理方式，preserve 表示保留 JSX 语法，交给后续工具转换
+    // 📖 https://www.typescriptlang.org/tsconfig/#jsx
+    "jsx": "preserve",
+
+    // 指定要包含的类型库定义，es2016 + DOM API
+    // 📖 https://www.typescriptlang.org/tsconfig/#lib
+    "lib": ["es2016", "dom"],
+
+    // 指定要包含的类型定义包
+    // vitest/globals: Vitest 测试框架全局类型
+    // puppeteer: 浏览器自动化测试库类型
+    // node: Node.js 环境类型
+    // 📖 https://www.typescriptlang.org/tsconfig/#types
+    "types": [],
+
+    // 指定参与编译的源代码根目录
+    // 📖 https://www.typescriptlang.org/tsconfig/#rootDir
+    "rootDir": ".",
+
+    // 路径别名映射，简化导入路径
+    // @vue/* 映射到 packages/*/src 目录
+    // 📖 https://www.typescriptlang.org/tsconfig/#paths
+    "paths": {
+      "@vue/*": ["packages/*/src"]
+    },
+
+    // Deleted: // 启用 isolatedDeclarations，要求函数和属性必须有显式类型注解
+    // Deleted: // 用于生成更可靠的声明文件
+    // Deleted: // 📖 https://www.typescriptlang.org/tsconfig/#isolatedDeclarations
+    // Deleted: "isolatedDeclarations": true,
+
+    // Deleted: // 启用复合项目，支持项目引用和增量编译
+    // Deleted: // 📖 https://www.typescriptlang.org/tsconfig/#composite
+    // Deleted: "composite": true,
+
+    // Deleted: // 生成声明文件
+    // Deleted: // 📖 https://www.typescriptlang.org/tsconfig/#declaration
+    // Deleted: "declaration": false
+  },
+
+  // 指定要编译的文件和目录
+  // 📖 https://www.typescriptlang.org/tsconfig/#include
+  "include": [
+    "packages/*/src" // 所有包的源代码
+  ],
+
+  // 排除不编译的文件和目录
+  // 📖 https://www.typescriptlang.org/tsconfig/#exclude
+  "exclude": []
+}
