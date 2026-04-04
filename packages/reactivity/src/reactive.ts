@@ -1,5 +1,7 @@
 // 从 baseHandlers 模块导入可变对象的 Proxy 处理器
 import { mutableHandlers } from './baseHandlers'
+// 导入 isObject
+import { isObject } from '@vue/shared'
 
 /**
  * 全局弱引用缓存，存储已创建的响应式对象代理
@@ -49,3 +51,7 @@ function createReactiveObject(
   // 返回创建好的响应式代理对象
   return proxy
 }
+
+// toReactive
+export const toReactive =<T extends unknown>(value: T): T =>
+  isObject(value) ? reactive(value as object) : value
