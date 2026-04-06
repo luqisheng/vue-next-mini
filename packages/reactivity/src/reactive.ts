@@ -9,7 +9,9 @@ import { isObject } from '@vue/shared'
  * 使用 WeakMap 避免内存泄漏，当原始对象被回收时，Proxy 也会自动被回收
  */
 export const reactiveMap = new WeakMap<object, any>()
-
+export const enum ReactiveFlags {
+  IS_REACTIVE = '__v_isReactive',
+}
 /**
  * reactive 函数：创建对象的响应式代理
  * @param target - 要转换为响应式的目标对象
@@ -43,6 +45,8 @@ function createReactiveObject(
   // 【核心步骤：创建 Proxy】
   // 使用 Proxy 包装目标对象，通过 baseHandlers 拦截属性的读写操作
   const proxy = new Proxy(target, baseHandlers)
+
+  proxy[ReactiveFlags.IS_REACTIVE] = true
   
   // 【优化点 2：缓存新创建的 Proxy】
   // 将原始对象和对应的 Proxy 存入缓存，下次可直接复用
@@ -55,3 +59,5 @@ function createReactiveObject(
 // toReactive
 export const toReactive =<T extends unknown>(value: T): T =>
   isObject(value) ? reactive(value as object) : value
+export const isReactive = (value: any): boolean =>
+  !!(value && value.__v_isReactive)

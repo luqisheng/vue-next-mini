@@ -123,6 +123,7 @@ export class ReactiveEffect<T = any> {
       // activeEffect = undefined
     }
   }
+  stop(){}
 }
 
 /**

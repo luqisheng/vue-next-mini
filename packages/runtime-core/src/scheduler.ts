@@ -17,7 +17,8 @@ function queueCb(cb: Function, pendingQueue: Function[]) {
 function queueFlush() {
   if (!isFlushPending) {
     isFlushPending = true
-    currentFlushPromise =  resolvedPromise.then(flushJobs)
+    // currentFlushPromise =  resolvedPromise.then(flushJobs)
+    resolvedPromise.then(flushJobs)
   }
 }
 
