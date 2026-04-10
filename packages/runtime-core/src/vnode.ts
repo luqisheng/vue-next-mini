@@ -1,5 +1,11 @@
 import { isString, isObject, isArray, ShapeFlags } from '@vue/shared'
 import { normalizeClass, normalizeStyle } from './normalizeProp'
+
+// VNode types
+export const Text = Symbol.for('Text')
+export const Fragment = Symbol.for('Fragment')
+export const ELEMENT = Symbol.for('Element')
+
 export interface VNode {
   __v_isVNode: true
   el: any
