@@ -15,11 +15,14 @@
     <div id="app"></div>
     <script>
       const { h } = Vue
-      const vnode = h('div', { class: 'test' }, [
-        'hello world',
-        h('span','span'),
-        h('p','p'),
-      ])
+      const vnode = h(
+        'div',
+        {
+          class: { test: true, blue: false, red: true },
+          style: { color: 'red', backgroundColor: 'blue' }
+        },
+        ['增强的class', 'hello world', h('span', 'span'), h('p', 'p')]
+      )
       console.log(vnode)
     </script>
   </body>

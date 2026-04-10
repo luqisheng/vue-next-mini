@@ -2,7 +2,7 @@ let isFlushPending = false
 
 const resolvedPromise = Promise.resolve()
 
-let currentFlushPromise: Promise<void> | null = null
+// let currentFlushPromise: Promise<void> | null = null
 
 const pendingPreFlushCbs: Function[] = []
 export function queuePreFlushCb(cd: Function) {
