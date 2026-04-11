@@ -69,8 +69,8 @@ function baseCreateRenderer(options: RendererOptions): any {
     const el = (newVNode.el = oldVNode.el)
     const oldProps = oldVNode.props || EMPTY_OBJ
     const newProps = newVNode.props || EMPTY_OBJ
-    patchProps(el, newVNode, oldProps, newProps)
     patchChildren(oldVNode, newVNode, el, null)
+    patchProps(el, newVNode, oldProps, newProps)
   }
   const patchChildren = (
     oldVNode: any,
@@ -87,7 +87,7 @@ function baseCreateRenderer(options: RendererOptions): any {
         // 删除老的children
         unmountChildren(c1)
       }
-      if (c1 !== c2) {
+      if (c2 !== c1) {
         // 设置element的text
         hostSetElementText(container, c2)
       }
