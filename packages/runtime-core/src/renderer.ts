@@ -1,6 +1,6 @@
 import { EMPTY_OBJ, ShapeFlags } from '@vue/shared'
 import type { VNode } from './vnode'
-import { Fragment, Text, ELEMENT } from './vnode'
+import { Fragment, Text, ELEMENT, isSameVNodeType } from './vnode'
 
 export interface RendererOptions {
   //   设置element的属性props打补丁
@@ -25,6 +25,17 @@ function baseCreateRenderer(options: RendererOptions): any {
     patchProp: hostPatchProp,
     remove: hostRemove
   } = options
+  
+  // 组件实例接口
+  interface ComponentInstance {
+    vnode: VNode
+    subTree: VNode | null
+    render: Function
+    update: Function | null
+    container: any  // 保存容器引用
+    anchor: any     // 保存锚点引用
+  }
+  
   const processElement = (
     oldVNode: VNode,
     newVNode: VNode,
@@ -39,6 +50,85 @@ function baseCreateRenderer(options: RendererOptions): any {
       patchElement(oldVNode, newVNode)
     }
   }
+  
+  // 处理组件
+  const processComponent = (
+    oldVNode: VNode | null,
+    newVNode: VNode,
+    container: any,
+    anchor: any = null
+  ) => {
+    if (oldVNode == null) {
+      mountComponent(newVNode, container, anchor)
+    } else {
+      updateComponent(oldVNode, newVNode)
+    }
+  }
+  
+  // 挂载组件
+  const mountComponent = (
+    initialVNode: VNode,
+    container: any,
+    anchor: any = null
+  ) => {
+    // 创建组件实例
+    const instance: ComponentInstance = {
+      vnode: initialVNode,
+      subTree: null,
+      render: initialVNode.type.render,
+      update: null,
+      container,
+      anchor
+    }
+    
+    // 将实例保存到vnode上
+    initialVNode.component = instance
+    
+    // 渲染组件
+    setupRenderEffect(instance)
+  }
+  
+  // 设置渲染effect
+  const setupRenderEffect = (
+    instance: ComponentInstance
+  ) => {
+    const { container, anchor } = instance
+    
+    // 渲染组件的子树
+    const subTree = instance.render.call(instance)
+    
+    // 递归patch子树
+    patch(null, subTree, container, anchor)
+    
+    // 保存子树引用
+    instance.subTree = subTree
+    
+    // 将组件的DOM元素引用保存到vnode.el
+    instance.vnode.el = subTree.el
+  }
+  
+  // 更新组件
+  const updateComponent = (
+    oldVNode: VNode,
+    newVNode: VNode
+  ) => {
+    // 获取组件实例
+    const instance = (newVNode.component = oldVNode.component)!
+    
+    // 更新vnode引用
+    instance.vnode = newVNode
+    
+    // 重新渲染
+    const nextSubTree = instance.render.call(instance)
+    
+    // patch旧的子树和新的子树，使用保存的container和anchor
+    patch(instance.subTree, nextSubTree, instance.container, instance.anchor)
+    
+    // 更新子树引用
+    instance.subTree = nextSubTree
+    newVNode.el = nextSubTree.el
+  }
+  
   const mountChildren = (children: any, container: any) => {
     for (let i = 0; i < children.length; i++) {
       const child = children[i]
@@ -94,7 +184,28 @@ function baseCreateRenderer(options: RendererOptions): any {
     } else {
       if (prevShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
         if (newShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
-          // todo diff
+          // array to array - 简单的全量更新实现
+          // TODO: 后续可以实现完整的 diff 算法
+          const commonLength = Math.min(c1.length, c2.length)
+          
+          // 1. patch 共同长度的子节点
+          for (let i = 0; i < commonLength; i++) {
+            patch(c1[i], c2[i], container, anchor)
+          }
+          
+          // 2. 如果新数组更长，挂载新增的子节点
+          if (c2.length > c1.length) {
+            for (let i = commonLength; i < c2.length; i++) {
+              patch(null, c2[i], container, anchor)
+            }
+          }
+          
+          // 3. 如果旧数组更长，卸载多余的子节点
+          if (c1.length > c2.length) {
+            for (let i = commonLength; i < c1.length; i++) {
+              unmount(c1[i])
+            }
+          }
         } else {
           // 删除老的children
           unmountChildren(c1)
@@ -127,12 +238,12 @@ function baseCreateRenderer(options: RendererOptions): any {
           hostPatchProp(el, key, prev, next)
         }
       }
-      if (oldProps !==EMPTY_OBJ) {
+      if (oldProps !== EMPTY_OBJ) {
         for (const key in oldProps) {
-        if (!(key in newProps)) {
-          hostPatchProp(el, key, oldProps[key], null)
+          if (!(key in newProps)) {
+            hostPatchProp(el, key, oldProps[key], null)
+          }
         }
-        }   
       }
     }
   }
@@ -145,6 +256,12 @@ function baseCreateRenderer(options: RendererOptions): any {
       }
     }
   }
+  const unmount = (vnode: any) => {
+    const parent = vnode.el.parentNode
+    if (parent) {
+      hostRemove(vnode.el)
+    }
+  }
   const patch = (
     oldVNode: any,
     newVNode: VNode,
@@ -153,6 +270,11 @@ function baseCreateRenderer(options: RendererOptions): any {
   ) => {
     if (oldVNode === newVNode) {
       return
+    }
+    console.log('patch', oldVNode, newVNode)
+    if (oldVNode && !isSameVNodeType(oldVNode, newVNode)) {
+      unmount(oldVNode)
+      oldVNode = null
     }
     const { type, shapeFlag } = newVNode
     switch (type) {
@@ -164,6 +286,7 @@ function baseCreateRenderer(options: RendererOptions): any {
         if (shapeFlag & ShapeFlags.ELEMENT) {
           processElement(oldVNode, newVNode, container, anchor)
         } else if (shapeFlag & ShapeFlags.COMPONENT) {
+          processComponent(oldVNode, newVNode, container, anchor)
         }
         break
     }

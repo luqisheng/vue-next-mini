@@ -1,6 +1,8 @@
 import { isOn } from '@vue/shared'
 import { patchClass } from '../modules/class'
 import { patchStyle } from '../modules/style'
+import { patchDomProp } from '../modules/props'
+import { patchAttr } from '../modules/attrs'
 
 export const patchProp = (
   el: Element,
@@ -14,8 +16,26 @@ export const patchProp = (
     patchStyle(el, nextValue, prevValue)
   } else if (isOn(key)) {
     // TODO: 处理事件
+  } else if (shouldSetAsProp(el, key)) {
+    patchDomProp(el, key, nextValue)
   } else {
     //   否则，设置element的属性
-    el.setAttribute(key, nextValue)
+    patchAttr(el, key, nextValue)
   }
+}
+function shouldSetAsProp(el: Element, key: string) {
+  if (key === 'form') {
+    return false
+  }
+  if (key === 'list' && el.tagName === 'INPUT') {
+    return false
+  }
+  if (
+    key === 'type' &&
+    el.tagName === 'TEXTAREA' &&
+    el.getAttribute(key) === 'text'
+  ) {
+    return false
+  }
+  return key in el
 }
