@@ -1,6 +1,7 @@
-import { EMPTY_OBJ, ShapeFlags } from '@vue/shared'
+import { EMPTY_OBJ, isString, ShapeFlags } from '@vue/shared'
 import type { VNode } from './vnode'
 import { Fragment, Text, isSameVNodeType } from './vnode'
+import { normalizeVNode } from './componentRenderUrils'
 
 export interface RendererOptions {
   //   设置element的属性props打补丁
@@ -15,6 +16,7 @@ export interface RendererOptions {
   createElement(type: string): any
   createText(text: string): any
   setText(node: Element, text: string): void
+  createComment(text: string): any
 }
 export function createRenderer(options: RendererOptions) {
   return baseCreateRenderer(options)
@@ -28,6 +30,7 @@ function baseCreateRenderer(options: RendererOptions): any {
     patchProp: hostPatchProp,
     remove: hostRemove,
     setText: hostSetText,
+    createComment: hostCreateComment
   } = options
 
   // 组件实例接口
@@ -50,9 +53,22 @@ function baseCreateRenderer(options: RendererOptions): any {
       hostInsert(newVNode.el, container, anchor)
     } else {
       const el = (newVNode.el = oldVNode.el!)
-      if(newVNode.children !== oldVNode.children){
+      if (newVNode.children !== oldVNode.children) {
         hostSetText(el, newVNode.children)
       }
+    }
+  }
+  const processCommentNode = (
+    oldVNode: VNode,
+    newVNode: VNode,
+    container: any,
+    anchor: any = null
+  ) => {
+    if (oldVNode == null) {
+      newVNode.el = hostCreateComment(newVNode.children)
+      hostInsert(newVNode.el, container, anchor)
+    } else {
+      newVNode.el = oldVNode.el
     }
   }
   const processFragment = (
@@ -62,7 +78,7 @@ function baseCreateRenderer(options: RendererOptions): any {
     anchor: any = null
   ) => {
     if (oldVNode == null) {
-      // mountChildren(newVNode.children, container, anchor)
+      mountChildren(newVNode.children, container, anchor)
     } else {
       patchChildren(oldVNode, newVNode, container, anchor)
     }
@@ -156,10 +172,13 @@ function baseCreateRenderer(options: RendererOptions): any {
     newVNode.el = nextSubTree.el
   }
 
-  const mountChildren = (children: any, container: any) => {
+  const mountChildren = (children: any, container: any, anchor: any = null) => {
+    if(isString(children)){
+      children = children.split('')
+    }
     for (let i = 0; i < children.length; i++) {
-      const child = children[i]
-      patch(null, child, container)
+      const child = (children[i] = normalizeVNode(children[i]))
+      patch(null, child, container, anchor)
     }
   }
   const mountElement = (vnode: VNode, container: any, anchor: any = null) => {
@@ -306,8 +325,10 @@ function baseCreateRenderer(options: RendererOptions): any {
     const { type, shapeFlag } = newVNode
     switch (type) {
       case Text:
-        console.log('patchText')
         processText(oldVNode, newVNode, container, anchor)
+        break
+      case Comment:
+        processCommentNode(oldVNode, newVNode, container, anchor)
         break
       case Fragment:
         processFragment(oldVNode, newVNode, container, anchor)

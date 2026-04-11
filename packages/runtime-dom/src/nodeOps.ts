@@ -22,4 +22,7 @@ export const nodeOps = {
   setText(node: Element, text: string) {
     node.nodeValue = text
   },
+  createComment(text: string): Comment {
+    return doc.createComment(text)
+  },
 }
