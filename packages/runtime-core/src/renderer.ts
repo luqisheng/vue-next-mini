@@ -1,4 +1,4 @@
-import { ShapeFlags } from '@vue/shared'
+import { EMPTY_OBJ, ShapeFlags } from '@vue/shared'
 import type { VNode } from './vnode'
 import { Fragment, Text, ELEMENT } from './vnode'
 
@@ -8,7 +8,7 @@ export interface RendererOptions {
   //   设置element的text
   setElementText(node: Element, text: string): void
   //   插入element到parent，achor为null时，表示插入到末尾
-  insert(el: any, parent: Element, anchor?: any): void
+  insert(el: any, parent: Element | null, anchor?: any): void
   //   创建element
   createElement(type: string): any
 }
@@ -28,10 +28,12 @@ function baseCreateRenderer(options: RendererOptions): any {
     container: any,
     anchor: any = null
   ) => {
+    // debugger
     if (oldVNode == null) {
       mountElement(newVNode, container, anchor)
     } else {
-      // todo:更新
+      // 更新
+      patchElement(oldVNode, newVNode)
     }
   }
   const mountChildren = (children: any, container: any) => {
@@ -59,6 +61,83 @@ function baseCreateRenderer(options: RendererOptions): any {
     }
     // 插入element
     hostInsert(el, container, anchor)
+  }
+  const patchElement = (oldVNode: VNode, newVNode: VNode) => {
+    const el = (newVNode.el = oldVNode.el)
+    const oldProps = oldVNode.props || EMPTY_OBJ
+    const newProps = newVNode.props || EMPTY_OBJ
+    patchChildren(oldProps, newProps, el, null)
+    patchProps(el, newVNode, oldProps, newProps)
+  }
+  const patchChildren = (
+    oldVNode: any,
+    newVNode: any,
+    container: any,
+    anchor: any = null
+  ) => {
+    const c1 = oldVNode?.children
+    const prevShapeFlag = oldVNode?.shapeFlag
+    const c2 = newVNode?.children
+    const newShapeFlag = newVNode?.shapeFlag
+    if (newShapeFlag & ShapeFlags.TEXT_CHILDREN) {
+      if (prevShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+        // 删除老的children
+        unmountChildren(c1)
+      }
+      if (c1 !== c2) {
+        // 设置element的text
+        hostSetElementText(container, c2)
+      }
+    } else {
+      if (prevShapeFlag & prevShapeFlag.ARRAY_CHILDREN) {
+        if (newShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+          // todo diff
+        } else {
+          // 删除老的children
+          unmountChildren(c1)
+          // 挂载新的children
+          mountChildren(c2, container)
+        }
+      } else {
+        if (prevShapeFlag & ShapeFlags.TEXT_CHILDREN) {
+          // 删除老的children
+          hostSetElementText(container, '')
+        }
+        if (newShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+          // 挂载新的children
+          mountChildren(c2, container)
+        }
+      }
+    }
+  }
+  const patchProps = (
+    el: Element,
+    vnode: VNode,
+    oldProps: any,
+    newProps: any
+  ) => {
+    if (oldProps !== newProps) {
+      for (const key in newProps) {
+        const prev = oldProps[key]
+        const next = newProps[key]
+        if (prev !== next) {
+          hostPatchProp(el, key, prev, next)
+        }
+      }
+      if (oldProps !==EMPTY_OBJ) {
+        for (const key in oldProps) {
+        if (!(key in newProps)) {
+          hostPatchProp(el, key, oldProps[key], null)
+        }
+        }   
+      }
+    }
+  }
+  const unmountChildren = (children: any) => {
+    for (let i = 0; i < children.length; i++) {
+      const child = children[i].el
+      hostInsert(child, null)
+    }
   }
   const patch = (
     oldVNode: any,

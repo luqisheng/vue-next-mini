@@ -25,6 +25,11 @@
       )
       render(vnode, document.querySelector('#app'))
       console.log(vnode)
+      
+      setTimeout(() => {
+        const vnode = h('div', { class: 'active' }, 'hello world2')
+        render(vnode, document.querySelector('#app'))
+      }, 3000)
     </script>
   </body>
 </html>
