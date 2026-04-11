@@ -1,6 +1,6 @@
 import { EMPTY_OBJ, ShapeFlags } from '@vue/shared'
 import type { VNode } from './vnode'
-import { Fragment, Text, ELEMENT, isSameVNodeType } from './vnode'
+import { Fragment, Text, isSameVNodeType } from './vnode'
 
 export interface RendererOptions {
   //   设置element的属性props打补丁
@@ -13,6 +13,8 @@ export interface RendererOptions {
   remove(el: any): void
   //   创建element
   createElement(type: string): any
+  createText(text: string): any
+  setText(node: Element, text: string): void
 }
 export function createRenderer(options: RendererOptions) {
   return baseCreateRenderer(options)
@@ -22,20 +24,50 @@ function baseCreateRenderer(options: RendererOptions): any {
     insert: hostInsert,
     setElementText: hostSetElementText,
     createElement: hostCreateElement,
+    createText: hostCreateText,
     patchProp: hostPatchProp,
-    remove: hostRemove
+    remove: hostRemove,
+    setText: hostSetText,
   } = options
-  
+
   // 组件实例接口
   interface ComponentInstance {
     vnode: VNode
     subTree: VNode | null
     render: Function
     update: Function | null
-    container: any  // 保存容器引用
-    anchor: any     // 保存锚点引用
+    container: any // 保存容器引用
+    anchor: any // 保存锚点引用
   }
-  
+  const processText = (
+    oldVNode: VNode,
+    newVNode: VNode,
+    container: any,
+    anchor: any = null
+  ) => {
+    if (oldVNode == null) {
+      newVNode.el = hostCreateText(newVNode.children)
+      hostInsert(newVNode.el, container, anchor)
+    } else {
+      const el = (newVNode.el = oldVNode.el!)
+      if(newVNode.children !== oldVNode.children){
+        hostSetText(el, newVNode.children)
+      }
+    }
+  }
+  const processFragment = (
+    oldVNode: VNode | null,
+    newVNode: VNode,
+    container: any,
+    anchor: any = null
+  ) => {
+    if (oldVNode == null) {
+      // mountChildren(newVNode.children, container, anchor)
+    } else {
+      patchChildren(oldVNode, newVNode, container, anchor)
+    }
+  }
+
   const processElement = (
     oldVNode: VNode,
     newVNode: VNode,
@@ -50,7 +82,7 @@ function baseCreateRenderer(options: RendererOptions): any {
       patchElement(oldVNode, newVNode)
     }
   }
-  
+
   // 处理组件
   const processComponent = (
     oldVNode: VNode | null,
@@ -64,7 +96,7 @@ function baseCreateRenderer(options: RendererOptions): any {
       updateComponent(oldVNode, newVNode)
     }
   }
-  
+
   // 挂载组件
   const mountComponent = (
     initialVNode: VNode,
@@ -80,55 +112,50 @@ function baseCreateRenderer(options: RendererOptions): any {
       container,
       anchor
     }
-    
+
     // 将实例保存到vnode上
     initialVNode.component = instance
-    
+
     // 渲染组件
     setupRenderEffect(instance)
   }
-  
+
   // 设置渲染effect
-  const setupRenderEffect = (
-    instance: ComponentInstance
-  ) => {
+  const setupRenderEffect = (instance: ComponentInstance) => {
     const { container, anchor } = instance
-    
+
     // 渲染组件的子树
     const subTree = instance.render.call(instance)
-    
+
     // 递归patch子树
     patch(null, subTree, container, anchor)
-    
+
     // 保存子树引用
     instance.subTree = subTree
-    
+
     // 将组件的DOM元素引用保存到vnode.el
     instance.vnode.el = subTree.el
   }
-  
+
   // 更新组件
-  const updateComponent = (
-    oldVNode: VNode,
-    newVNode: VNode
-  ) => {
+  const updateComponent = (oldVNode: VNode, newVNode: VNode) => {
     // 获取组件实例
     const instance = (newVNode.component = oldVNode.component)!
-    
+
     // 更新vnode引用
     instance.vnode = newVNode
-    
+
     // 重新渲染
     const nextSubTree = instance.render.call(instance)
-    
+
     // patch旧的子树和新的子树，使用保存的container和anchor
     patch(instance.subTree, nextSubTree, instance.container, instance.anchor)
-    
+
     // 更新子树引用
     instance.subTree = nextSubTree
     newVNode.el = nextSubTree.el
   }
-  
+
   const mountChildren = (children: any, container: any) => {
     for (let i = 0; i < children.length; i++) {
       const child = children[i]
@@ -187,19 +214,19 @@ function baseCreateRenderer(options: RendererOptions): any {
           // array to array - 简单的全量更新实现
           // TODO: 后续可以实现完整的 diff 算法
           const commonLength = Math.min(c1.length, c2.length)
-          
+
           // 1. patch 共同长度的子节点
           for (let i = 0; i < commonLength; i++) {
             patch(c1[i], c2[i], container, anchor)
           }
-          
+
           // 2. 如果新数组更长，挂载新增的子节点
           if (c2.length > c1.length) {
             for (let i = commonLength; i < c2.length; i++) {
               patch(null, c2[i], container, anchor)
             }
           }
-          
+
           // 3. 如果旧数组更长，卸载多余的子节点
           if (c1.length > c2.length) {
             for (let i = commonLength; i < c1.length; i++) {
@@ -279,8 +306,11 @@ function baseCreateRenderer(options: RendererOptions): any {
     const { type, shapeFlag } = newVNode
     switch (type) {
       case Text:
+        console.log('patchText')
+        processText(oldVNode, newVNode, container, anchor)
         break
       case Fragment:
+        processFragment(oldVNode, newVNode, container, anchor)
         break
       default:
         if (shapeFlag & ShapeFlags.ELEMENT) {

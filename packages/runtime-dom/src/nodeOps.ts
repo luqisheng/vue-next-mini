@@ -16,4 +16,10 @@ export const nodeOps = {
   setElementText(node: Element, text: string) {
     node.textContent = text
   },
+  createText(text: string): Text {
+    return doc.createTextNode(text)
+  },
+  setText(node: Element, text: string) {
+    node.nodeValue = text
+  },
 }

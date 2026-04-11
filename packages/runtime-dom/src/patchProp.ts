@@ -3,6 +3,7 @@ import { patchClass } from '../modules/class'
 import { patchStyle } from '../modules/style'
 import { patchDomProp } from '../modules/props'
 import { patchAttr } from '../modules/attrs'
+import { patchEvent } from '../modules/events'
 
 export const patchProp = (
   el: Element,
@@ -15,7 +16,8 @@ export const patchProp = (
   } else if (key === 'style') {
     patchStyle(el, nextValue, prevValue)
   } else if (isOn(key)) {
-    // TODO: 处理事件
+    // 处理事件
+    patchEvent(el, key, prevValue, nextValue)
   } else if (shouldSetAsProp(el, key)) {
     patchDomProp(el, key, nextValue)
   } else {
