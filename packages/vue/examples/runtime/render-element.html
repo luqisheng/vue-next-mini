@@ -21,7 +21,7 @@
           class: { test: true, blue: false, red: true },
           style: { color: 'red', backgroundColor: 'blue' }
         },
-        ['增强的class', 'hello world', h('span', 'span'), h('p', 'p')]
+        [h('span', 'span'), h('p', 'p')]
       )
       render(vnode, document.querySelector('#app'))
       console.log(vnode)

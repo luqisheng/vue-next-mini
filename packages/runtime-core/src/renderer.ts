@@ -8,7 +8,9 @@ export interface RendererOptions {
   //   设置element的text
   setElementText(node: Element, text: string): void
   //   插入element到parent，achor为null时，表示插入到末尾
-  insert(el: any, parent: Element | null, anchor?: any): void
+  insert(el: any, parent: Element, anchor?: any): void
+  //   移除element
+  remove(el: any): void
   //   创建element
   createElement(type: string): any
 }
@@ -20,7 +22,8 @@ function baseCreateRenderer(options: RendererOptions): any {
     insert: hostInsert,
     setElementText: hostSetElementText,
     createElement: hostCreateElement,
-    patchProp: hostPatchProp
+    patchProp: hostPatchProp,
+    remove: hostRemove
   } = options
   const processElement = (
     oldVNode: VNode,
@@ -66,8 +69,8 @@ function baseCreateRenderer(options: RendererOptions): any {
     const el = (newVNode.el = oldVNode.el)
     const oldProps = oldVNode.props || EMPTY_OBJ
     const newProps = newVNode.props || EMPTY_OBJ
-    patchChildren(oldProps, newProps, el, null)
     patchProps(el, newVNode, oldProps, newProps)
+    patchChildren(oldVNode, newVNode, el, null)
   }
   const patchChildren = (
     oldVNode: any,
@@ -89,7 +92,7 @@ function baseCreateRenderer(options: RendererOptions): any {
         hostSetElementText(container, c2)
       }
     } else {
-      if (prevShapeFlag & prevShapeFlag.ARRAY_CHILDREN) {
+      if (prevShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
         if (newShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
           // todo diff
         } else {
@@ -135,8 +138,11 @@ function baseCreateRenderer(options: RendererOptions): any {
   }
   const unmountChildren = (children: any) => {
     for (let i = 0; i < children.length; i++) {
-      const child = children[i].el
-      hostInsert(child, null)
+      const child = children[i]
+      // 只有当子节点有 el 属性（已挂载到 DOM）时才移除
+      if (child && child.el) {
+        hostRemove(child.el)
+      }
     }
   }
   const patch = (
@@ -154,9 +160,6 @@ function baseCreateRenderer(options: RendererOptions): any {
         break
       case Fragment:
         break
-      case ELEMENT:
-        break
-
       default:
         if (shapeFlag & ShapeFlags.ELEMENT) {
           processElement(oldVNode, newVNode, container, anchor)
@@ -168,8 +171,13 @@ function baseCreateRenderer(options: RendererOptions): any {
 
   const render = (vnode: VNode | null, container: any) => {
     if (vnode === null) {
+      if (container._vnode) {
+        // unmount
+        container._vnode = null
+      }
     } else {
       patch(container._vnode || null, vnode, container)
+      container._vnode = vnode
     }
   }
   return { render }
