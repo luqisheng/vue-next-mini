@@ -127,8 +127,11 @@ function baseCreateRenderer(options: RendererOptions): any {
   ) => {
     const componentUpdateFn = () => {
       if (!instance.isMounted) {
+        const {bm, m}=instance
+        bm?.()
         const subTree = (instance.subTree = renderComponentRoot(instance))
         patch(null, subTree as any, container, anchor)
+        m?.()
         initialVNode.el = (subTree as any).el
       } else {
       }
