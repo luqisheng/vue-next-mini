@@ -1,5 +1,5 @@
 import { reactive } from '@vue/reactivity'
-import { isObject } from 'packages/shared/src/index'
+import { isFunction, isObject } from 'packages/shared/src/index'
 import { onBeforeMount, onMounted } from './apiLifecycle'
 let uid = 0
 export function createComponentInstance(vnode: any) {
@@ -27,12 +27,30 @@ export function setupComponent(instance: any) {
 }
 
 function setupStatefulComponent(instance: any) {
-  finishComponentSetup(instance)
+  const Component = instance.type
+  const { setup } = Component
+  if (setup) {
+    const setupResult = setup()
+    handleSetupResult(instance, setupResult)
+  } else {
+    finishComponentSetup(instance)
+  }
 }
 
+export function handleSetupResult(instance: any, setupResult: any) {
+  if (isFunction(setupResult)) {
+    instance.render = setupResult
+  } else if (isObject(setupResult)) {
+    instance.setupState = setupResult
+  }
+  finishComponentSetup(instance)
+}
 export function finishComponentSetup(instance: any) {
   const Component = instance.type
-  instance.render = Component.render
+  if (!instance.render) {
+    instance.render = Component.render
+  }
+
   applyOptions(instance)
 }
 
@@ -45,7 +63,7 @@ function applyOptions(instance: any) {
     mounted
   } = instance.type
   if (beforeCreate) {
-    callHook(beforeCreate)
+    callHook(beforeCreate, instance.data)
   }
   if (dataOptions) {
     const data = dataOptions()
@@ -54,16 +72,16 @@ function applyOptions(instance: any) {
     }
   }
   if (created) {
-    callHook(created)
+    callHook(created, instance.data)
   }
   function registerLifecycleHook(register: Function, hook?: Function) {
     if (hook) {
-      register(hook, instance)
+      register(hook?.bind(instance.data), instance)
     }
   }
   registerLifecycleHook(onBeforeMount, beforeMount)
   registerLifecycleHook(onMounted, mounted)
 }
-function callHook(hook: Function) {
-  hook()
+function callHook(hook: Function, proxy: any) {
+  hook.bind(proxy)()
 }

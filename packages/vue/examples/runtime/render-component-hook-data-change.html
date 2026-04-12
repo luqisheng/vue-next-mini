@@ -15,53 +15,37 @@
     <div id="app"></div>
     <script>
       const { h, render } = Vue
-
+      
       // 定义一个组件对象，必须包含 render 方法
       const MyComponent = {
         data() {
           return {
-            msg: 'hello component'
+            msg:'hello component'
           }
         },
         render() {
           return h('div', { class: 'test' }, this.msg)
         },
-        beforeCreate() {
-          alert('beforeCreate')
-        },
         created() {
-          alert('created')
+          console.log('created',this.msg)
+          setTimeout(() => {
+            this.msg = '你好世界'
+          }, 5000);
         },
         beforeMount() {
-          alert('beforeMount')
+          console.log('beforeMount')
         },
         mounted() {
-          alert('mounted')
+          console.log('mounted',this.msg)
         }
-      }
 
+      }
+      
       // 使用 h 函数创建组件 VNode
       const vnode = h(MyComponent)
-
+      
       // 渲染到页面
       render(vnode, document.querySelector('#app'))
-      setTimeout(() => {
-        const Component = {
-          data() {
-            return {
-              msg: 'hello component2'
-            }
-          },
-          render() {
-            return h('div', { class: 'test' }, this.msg)
-          },
-          mounted() {
-            alert('mounted')
-          }
-        }
-        const vnode2 = h(Component)
-        render(vnode2, document.querySelector('#app'))
-      }, 3000)
     </script>
   </body>
 </html>

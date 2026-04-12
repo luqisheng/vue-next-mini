@@ -127,13 +127,23 @@ function baseCreateRenderer(options: RendererOptions): any {
   ) => {
     const componentUpdateFn = () => {
       if (!instance.isMounted) {
-        const {bm, m}=instance
+        const { bm, m } = instance
         bm?.()
         const subTree = (instance.subTree = renderComponentRoot(instance))
         patch(null, subTree as any, container, anchor)
         m?.()
         initialVNode.el = (subTree as any).el
+        instance.isMounted = true
       } else {
+        let { next, vnode } = instance
+        if (!next) {
+          next = vnode
+        }
+        const nextTree = renderComponentRoot(instance)
+        const prevTree = instance.subTree
+        instance.subTree = nextTree
+        patch(prevTree, nextTree, container, anchor)
+        next.el = nextTree.el
       }
     }
     const effect = (instance.effect = new ReactiveEffect(

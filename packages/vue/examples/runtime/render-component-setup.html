@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <script src="../../dist/vue.js"></script>
+    <style>
+      .test {
+        color: red;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script>
+      const { h, render, reactive } = Vue
+
+      // 定义一个组件对象，必须包含 render 方法
+      const MyComponent = {
+        setup() {
+          const state = reactive({
+            msg: 'hello component setup'
+          })
+          setTimeout(() => {
+            state.msg = 'hello component setup2'
+          }, 3000);
+          return () => h('div', { class: 'test' }, state.msg)
+        }
+      }
+
+      // 使用 h 函数创建组件 VNode
+      const vnode = h(MyComponent)
+
+      // 渲染到页面
+      render(vnode, document.querySelector('#app'))
+    </script>
+  </body>
+</html>
