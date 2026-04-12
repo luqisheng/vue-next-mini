@@ -1,7 +1,7 @@
 import { EMPTY_OBJ, isString, ShapeFlags } from '@vue/shared'
 import type { VNode } from './vnode'
 import { Fragment, Text, isSameVNodeType } from './vnode'
-import { normalizeVNode } from './componentRenderUrils'
+import { normalizeVNode } from './componentRenderUtils'
 
 export interface RendererOptions {
   //   设置element的属性props打补丁

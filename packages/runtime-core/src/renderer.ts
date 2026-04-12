@@ -1,7 +1,7 @@
 import { EMPTY_OBJ, isString, ShapeFlags } from '@vue/shared'
 import type { VNode } from './vnode'
 import { Fragment, Text, isSameVNodeType } from './vnode'
-import { normalizeVNode, renderComponentRoot } from './componentRenderUrils'
+import { normalizeVNode, renderComponentRoot } from './componentRenderUtils'
 import { createComponentInstance, setupComponent } from './component'
 import { ReactiveEffect } from '@vue/reactivity'
 import { queuePreFlushCb } from './scheduler'

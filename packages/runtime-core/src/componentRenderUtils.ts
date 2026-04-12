@@ -2,11 +2,11 @@ import { createVNode, Text } from './vnode'
 import { ShapeFlags } from 'packages/shared/src/shapeFlags'
 
 export function renderComponentRoot(instance: any) {
-  const {vnode,render}=instance
+  const {vnode,render,data}=instance
   let result
   try {
     if(vnode.shapeFlag & ShapeFlags.STATEFUL_COMPONENT){
-      result = normalizeVNode(render!())
+      result = normalizeVNode(render!.call(data))
     }
   } catch (error) {
     console.log(error)

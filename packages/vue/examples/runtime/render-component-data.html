@@ -18,8 +18,13 @@
       
       // 定义一个组件对象，必须包含 render 方法
       const MyComponent = {
+        data() {
+          return {
+            msg:'hello component'
+          }
+        },
         render() {
-          return h('div', { class: 'test' }, 'hello component')
+          return h('div', { class: 'test' }, this.msg)
         }
       }
       
@@ -30,8 +35,13 @@
       render(vnode, document.querySelector('#app'))
       setTimeout(() => {
         const Component = {
+          data() {
+            return {
+              msg:'hello component2'
+            }
+          },
           render() {
-            return h('div', { class: 'test' }, 'hello component2')
+            return h('div', { class: 'test' }, this.msg)
           }
         }
         const vnode2 = h(Component)
