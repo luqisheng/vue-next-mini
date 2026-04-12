@@ -1,7 +1,11 @@
-import { EMPTY_OBJ, isString, ShapeFlags } from '@vue/shared'
+import { EMPTY_OBJ, isString } from '@vue/shared'
 import type { VNode } from './vnode'
 import { Fragment, Text, isSameVNodeType } from './vnode'
-import { normalizeVNode } from './componentRenderUtils'
+import { normalizeVNode, renderComponentRoot } from './componentRenderUtils'
+import { createComponentInstance, setupComponent } from './component'
+import { ReactiveEffect } from '@vue/reactivity'
+import { queuePreFlushCb } from './scheduler'
+import { ShapeFlags } from 'packages/shared/src/shapeFlags'
 
 export interface RendererOptions {
   //   设置element的属性props打补丁
@@ -32,16 +36,6 @@ function baseCreateRenderer(options: RendererOptions): any {
     setText: hostSetText,
     createComment: hostCreateComment
   } = options
-
-  // 组件实例接口
-  interface ComponentInstance {
-    vnode: VNode
-    subTree: VNode | null
-    render: Function
-    update: Function | null
-    container: any // 保存容器引用
-    anchor: any // 保存锚点引用
-  }
   const processText = (
     oldVNode: VNode,
     newVNode: VNode,
@@ -119,38 +113,48 @@ function baseCreateRenderer(options: RendererOptions): any {
     container: any,
     anchor: any = null
   ) => {
-    // 创建组件实例
-    const instance: ComponentInstance = {
-      vnode: initialVNode,
-      subTree: null,
-      render: initialVNode.type.render,
-      update: null,
-      container,
-      anchor
-    }
-
-    // 将实例保存到vnode上
-    initialVNode.component = instance
-
-    // 渲染组件
-    setupRenderEffect(instance)
+    initialVNode.component = createComponentInstance(initialVNode)
+    const instance = initialVNode.component
+    setupComponent(instance)
+    setupRenderEffect(instance, initialVNode, container, anchor)
   }
 
   // 设置渲染effect
-  const setupRenderEffect = (instance: ComponentInstance) => {
-    const { container, anchor } = instance
-
-    // 渲染组件的子树
-    const subTree = instance.render.call(instance)
-
-    // 递归patch子树
-    patch(null, subTree, container, anchor)
-
-    // 保存子树引用
-    instance.subTree = subTree
-
-    // 将组件的DOM元素引用保存到vnode.el
-    instance.vnode.el = subTree.el
+  const setupRenderEffect = (
+    instance: any,
+    initialVNode: VNode,
+    container: any,
+    anchor: any = null
+  ) => {
+    const componentUpdateFn = () => {
+      if (!instance.isMounted) {
+        const { bm, m } = instance
+        bm?.()
+        const subTree = (instance.subTree = renderComponentRoot(instance))
+        patch(null, subTree as any, container, anchor)
+        m?.()
+        initialVNode.el = (subTree as any).el
+        instance.isMounted = true
+      } else {
+        let { next, vnode } = instance
+        if (!next) {
+          next = vnode
+        }
+        const nextTree = renderComponentRoot(instance)
+        const prevTree = instance.subTree
+        instance.subTree = nextTree
+        patch(prevTree, nextTree, container, anchor)
+        next.el = nextTree.el
+      }
+    }
+    const effect = (instance.effect = new ReactiveEffect(
+      componentUpdateFn,
+      () => queuePreFlushCb(update)
+    ))
+    const update = (instance.update = () => {
+      effect.run()
+    })
+    update()
   }
 
   // 更新组件
@@ -173,7 +177,7 @@ function baseCreateRenderer(options: RendererOptions): any {
   }
 
   const mountChildren = (children: any, container: any, anchor: any = null) => {
-    if(isString(children)){
+    if (isString(children)) {
       children = children.split('')
     }
     for (let i = 0; i < children.length; i++) {

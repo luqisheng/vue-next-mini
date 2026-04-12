@@ -235,27 +235,8 @@ function baseCreateRenderer(options: RendererOptions): any {
       if (prevShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
         if (newShapeFlag & ShapeFlags.ARRAY_CHILDREN) {
           // array to array - 简单的全量更新实现
-          // TODO: 后续可以实现完整的 diff 算法
-          const commonLength = Math.min(c1.length, c2.length)
-
-          // 1. patch 共同长度的子节点
-          for (let i = 0; i < commonLength; i++) {
-            patch(c1[i], c2[i], container, anchor)
-          }
-
-          // 2. 如果新数组更长，挂载新增的子节点
-          if (c2.length > c1.length) {
-            for (let i = commonLength; i < c2.length; i++) {
-              patch(null, c2[i], container, anchor)
-            }
-          }
-
-          // 3. 如果旧数组更长，卸载多余的子节点
-          if (c1.length > c2.length) {
-            for (let i = commonLength; i < c1.length; i++) {
-              unmount(c1[i])
-            }
-          }
+          // TODO: diff
+          patchKeyedChildren(c1, c2, container, anchor)
         } else {
           // 删除老的children
           unmountChildren(c1)
@@ -272,6 +253,39 @@ function baseCreateRenderer(options: RendererOptions): any {
           mountChildren(c2, container)
         }
       }
+    }
+  }
+  const patchKeyedChildren = (
+    oldChildren: any,
+    newChildren: any,
+    container: any,
+    anchor: any = null
+  ) => {
+    let i = 0
+    let newChildrenLength = newChildren.length
+    let oldChildrenEnd = oldChildren.length - 1
+    let newChildrenEnd = newChildren.length - 1
+    // 1.自前向后匹配
+    while (i <= oldChildrenEnd && i <= newChildrenEnd) {
+      const newVNode = newChildren[i]
+      const oldVNode = oldChildren[i]
+      if (isSameVNodeType(oldVNode, newVNode)) {
+        patch(oldVNode, newVNode, container, null)
+      } else {
+        break
+      }
+      i++
+    }
+    // 2.自后向前匹配
+    while (i <= oldChildrenEnd && i <= newChildrenEnd) {
+      const newVNode = newChildren[newChildrenLength - i]
+      const oldVNode = oldChildren[oldChildrenEnd - i]
+      if (isSameVNodeType(oldVNode, newVNode)) {
+        patch(oldVNode, newVNode, container, null)
+      } else {
+        break
+      }
+      i++
     }
   }
   const patchProps = (
