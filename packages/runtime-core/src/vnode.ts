@@ -1,6 +1,6 @@
-import { isString, isObject, isArray, ShapeFlags } from '@vue/shared'
+import { isString, isObject, isArray } from '@vue/shared'
 import { normalizeClass, normalizeStyle } from './normalizeProp'
-
+import { ShapeFlags } from 'packages/shared/src/shapeFlags'
 // VNode types
 export const Text = Symbol.for('Text')
 export const Fragment = Symbol.for('Fragment')
@@ -49,7 +49,8 @@ function createBaseVNode(
     type,
     props,
     children,
-    shapeFlag
+    shapeFlag,
+    key: props?.key || null
   }
   normalizeChildren(vnode, children)
   return vnode

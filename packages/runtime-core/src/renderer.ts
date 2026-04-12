@@ -1,10 +1,11 @@
-import { EMPTY_OBJ, isString, ShapeFlags } from '@vue/shared'
+import { EMPTY_OBJ, isString } from '@vue/shared'
 import type { VNode } from './vnode'
 import { Fragment, Text, isSameVNodeType } from './vnode'
 import { normalizeVNode, renderComponentRoot } from './componentRenderUtils'
 import { createComponentInstance, setupComponent } from './component'
 import { ReactiveEffect } from '@vue/reactivity'
 import { queuePreFlushCb } from './scheduler'
+import { ShapeFlags } from 'packages/shared/src/shapeFlags'
 
 export interface RendererOptions {
   //   设置element的属性props打补丁

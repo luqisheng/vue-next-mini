@@ -14,13 +14,18 @@
   <body>
     <div id="app"></div>
     <script>
-      const { h } = Vue
-      const vnode = h('div', { class: 'test' }, [
+      const { h,isSameVNodeType } = Vue
+      const vnode = h('div', { class: 'test',key:'1' }, [
         'hello world',
         h('span','span'),
         h('p','p'),
       ])
-      console.log(vnode)
+      const vnode2 = h('div', { class: 'test',key:'1' }, [
+        'hello world2',
+        h('span','span2'),
+        h('p','p2'),
+      ])
+      console.log(vnode,isSameVNodeType(vnode,vnode2))
     </script>
   </body>
 </html>
