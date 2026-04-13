@@ -255,6 +255,51 @@ function baseCreateRenderer(options: RendererOptions): any {
       }
     }
   }
+  // 最长递增子序列算法（LIS）
+  const getSequence = (arr: number[]): number[] => {
+    const result = [0]
+    const predecessors = arr.slice()
+    
+    for (let i = 0; i < arr.length; i++) {
+      const arrI = arr[i]
+      if (arrI === 0) continue
+      
+      const resultLastIndex = result[result.length - 1]
+      if (arr[resultLastIndex] < arrI) {
+        predecessors[i] = resultLastIndex
+        result.push(i)
+        continue
+      }
+      
+      let start = 0
+      let end = result.length - 1
+      while (start < end) {
+        const mid = (start + end) >> 1
+        if (arr[result[mid]] < arrI) {
+          start = mid + 1
+        } else {
+          end = mid
+        }
+      }
+      
+      if (arrI < arr[result[start]]) {
+        if (start > 0) {
+          predecessors[i] = result[start - 1]
+        }
+        result[start] = i
+      }
+    }
+    
+    let len = result.length
+    let last = result[len - 1]
+    while (len-- > 0) {
+      result[len] = last
+      last = predecessors[last]
+    }
+    
+    return result
+  }
+
   const patchKeyedChildren = (
     oldChildren: any,
     newChildren: any,
@@ -309,7 +354,111 @@ function baseCreateRenderer(options: RendererOptions): any {
         i++
       }
     }
-    // 5. 未知序列（中间乱序），暂不实现
+    // 5. 未知序列（中间乱序）- 使用 LIS 优化
+    else { 
+      console.log('处理未知序列，i:', i, 'oldChildrenEnd:', oldChildrenEnd, 'newChildrenEnd:', newChildrenEnd)
+      
+      const s1 = i // 旧节点起始索引
+      const s2 = i // 新节点起始索引
+      
+      // 创建新节点的 key -> index 映射
+      const keyToNewIndexMap = new Map()
+      for (let j = s2; j <= newChildrenEnd; j++) {
+        const newVNode = normalizeVNode(newChildren[j])
+        if (newVNode.key != null) {
+          keyToNewIndexMap.set(newVNode.key, j)
+        }
+      }
+      
+      // 需要处理的节点数量
+      const toBePatched = newChildrenEnd - s2 + 1
+      let patched = 0
+      
+      // newIndexToOldIndexMap: 记录新节点对应的旧节点索引，0 表示是新节点
+      const newIndexToOldIndexMap = new Array(toBePatched).fill(0)
+      // 用于追踪是否需要移动
+      let moved = false
+      let maxNewIndexSoFar = 0
+      
+      // 遍历旧节点，卸载不在新节点中的节点，记录需要更新的节点
+      for (let j = s1; j <= oldChildrenEnd; j++) {
+        const oldVNode = oldChildren[j]
+        if (patched >= toBePatched) {
+          // 所有新节点都已处理，剩余的旧节点都需要卸载
+          unmount(oldVNode)
+          continue
+        }
+        
+        let newIndex: number | undefined
+        if (oldVNode.key != null) {
+          newIndex = keyToNewIndexMap.get(oldVNode.key)
+        } else {
+          // 没有 key 的旧节点，尝试在剩余的新节点中查找相同类型的节点
+          for (let k = s2; k <= newChildrenEnd; k++) {
+            if (newIndexToOldIndexMap[k - s2] === 0) {
+              const newVNode = normalizeVNode(newChildren[k])
+              if (isSameVNodeType(oldVNode, newVNode)) {
+                newIndex = k
+                break
+              }
+            }
+          }
+        }
+        
+        if (newIndex === undefined) {
+          // 旧节点不存在于新节点中，卸载
+          console.log('卸载不在新节点中的旧节点:', oldVNode.key)
+          unmount(oldVNode)
+        } else {
+          // 记录旧节点索引（+1 因为 0 表示新节点）
+          newIndexToOldIndexMap[newIndex - s2] = j + 1
+          
+          // 判断是否需要移动：如果当前新索引小于之前的最大索引，说明顺序乱了
+          if (newIndex >= maxNewIndexSoFar) {
+            maxNewIndexSoFar = newIndex
+          } else {
+            moved = true
+          }
+          
+          // patch 更新节点
+          const newVNode = normalizeVNode(newChildren[newIndex])
+          console.log('更新已存在的节点:', oldVNode.key, '从索引', j, '到', newIndex)
+          patch(oldVNode, newVNode, container, null)
+          patched++
+        }
+      }
+      
+      // 计算最长递增子序列（LIS）
+      const increasingNewIndexSequence = moved
+        ? getSequence(newIndexToOldIndexMap)
+        : []
+      
+      let j = increasingNewIndexSequence.length - 1
+      // 从后向前遍历新节点，挂载新节点或移动已存在的节点
+      for (let k = toBePatched - 1; k >= 0; k--) {
+        const nextIndex = s2 + k
+        const anchor = nextIndex + 1 < newChildren.length 
+          ? normalizeVNode(newChildren[nextIndex + 1]).el 
+          : parentAnchor
+        
+        const newVNode = normalizeVNode(newChildren[nextIndex])
+        
+        if (newIndexToOldIndexMap[k] === 0) {
+          // 新节点，需要挂载
+          console.log('挂载新的有key节点:', newVNode.key)
+          patch(null, newVNode, container, anchor)
+        } else if (moved) {
+          // 需要移动的节点
+          // 如果当前索引不在 LIS 中，则需要移动
+          if (j < 0 || k !== increasingNewIndexSequence[j]) {
+            console.log('移动节点:', newVNode.key, 'anchor:', anchor)
+            hostInsert(newVNode.el, container, anchor)
+          } else {
+            j--
+          }
+        }
+      }
+    }
   }
   const patchProps = (
     el: Element,
