@@ -259,16 +259,16 @@ function baseCreateRenderer(options: RendererOptions): any {
     oldChildren: any,
     newChildren: any,
     container: any,
-    anchor: any = null
+    parentAnchor: any = null
   ) => {
     let i = 0
-    let newChildrenLength = newChildren.length
     let oldChildrenEnd = oldChildren.length - 1
     let newChildrenEnd = newChildren.length - 1
-    // 1.自前向后匹配
+    
+    // 1. 从前向后同步
     while (i <= oldChildrenEnd && i <= newChildrenEnd) {
-      const newVNode = newChildren[i]
       const oldVNode = oldChildren[i]
+      const newVNode = newChildren[i]
       if (isSameVNodeType(oldVNode, newVNode)) {
         patch(oldVNode, newVNode, container, null)
       } else {
@@ -276,17 +276,40 @@ function baseCreateRenderer(options: RendererOptions): any {
       }
       i++
     }
-    // 2.自后向前匹配
+
+    // 2. 从后向前同步
     while (i <= oldChildrenEnd && i <= newChildrenEnd) {
-      const newVNode = newChildren[newChildrenLength - i]
-      const oldVNode = oldChildren[oldChildrenEnd - i]
+      const oldVNode = oldChildren[oldChildrenEnd]
+      const newVNode = newChildren[newChildrenEnd]
       if (isSameVNodeType(oldVNode, newVNode)) {
         patch(oldVNode, newVNode, container, null)
       } else {
         break
       }
-      i++
+      oldChildrenEnd--
+      newChildrenEnd--
     }
+
+    // 3. 新节点多于旧节点，需要挂载
+    if (i > oldChildrenEnd) {
+      if (i <= newChildrenEnd) {
+        // 锚点：下一个节点的 el，如果是最后一个则为 parentAnchor
+        const nextPos = newChildrenEnd + 1
+        const anchor = nextPos < newChildren.length ? newChildren[nextPos].el : parentAnchor
+        while (i <= newChildrenEnd) {
+          patch(null, normalizeVNode(newChildren[i]), container, anchor)
+          i++
+        }
+      }
+    }
+    // 4. 旧节点多于新节点，需要卸载
+    else if (i > newChildrenEnd) {
+      while (i <= oldChildrenEnd) {
+        unmount(oldChildren[i])
+        i++
+      }
+    }
+    // 5. 未知序列（中间乱序），暂不实现
   }
   const patchProps = (
     el: Element,
