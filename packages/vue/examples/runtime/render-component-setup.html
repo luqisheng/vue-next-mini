@@ -24,14 +24,14 @@
           })
           setTimeout(() => {
             state.msg = 'hello component setup2'
-          }, 3000);
+          }, 3000)
           return () => h('div', { class: 'test' }, state.msg)
         }
       }
 
       // 使用 h 函数创建组件 VNode
       const vnode = h(MyComponent)
-
+      console.log(vnode)
       // 渲染到页面
       render(vnode, document.querySelector('#app'))
     </script>

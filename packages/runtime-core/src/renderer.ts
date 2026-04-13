@@ -358,10 +358,12 @@ function baseCreateRenderer(options: RendererOptions): any {
     else { 
       console.log('处理未知序列，i:', i, 'oldChildrenEnd:', oldChildrenEnd, 'newChildrenEnd:', newChildrenEnd)
       
-      const s1 = i // 旧节点起始索引
-      const s2 = i // 新节点起始索引
+      // s1: 旧子节点列表中待处理节点的起始索引
+      const s1 = i
+      // s2: 新子节点列表中待处理节点的起始索引
+      const s2 = i
       
-      // 创建新节点的 key -> index 映射
+      // 步骤1: 创建新节点的 key -> index 映射表，用于快速查找
       const keyToNewIndexMap = new Map()
       for (let j = s2; j <= newChildrenEnd; j++) {
         const newVNode = normalizeVNode(newChildren[j])
@@ -370,31 +372,39 @@ function baseCreateRenderer(options: RendererOptions): any {
         }
       }
       
-      // 需要处理的节点数量
+      // 需要处理的节点总数（新节点数量）
       const toBePatched = newChildrenEnd - s2 + 1
-      let patched = 0
+      let patched = 0 // 已处理的节点计数
       
-      // newIndexToOldIndexMap: 记录新节点对应的旧节点索引，0 表示是新节点
+      // newIndexToOldIndexMap: 记录每个新节点对应的旧节点索引
+      // 值为 0 表示该新节点在旧节点中不存在（需要挂载）
+      // 值为 j+1 表示对应旧节点数组中的索引 j（+1 是为了区分 0）
       const newIndexToOldIndexMap = new Array(toBePatched).fill(0)
-      // 用于追踪是否需要移动
+      
+      // moved: 标记节点顺序是否发生变化
       let moved = false
+      // maxNewIndexSoFar: 记录遍历过程中遇到的最大新索引，用于判断是否需要移动
       let maxNewIndexSoFar = 0
       
-      // 遍历旧节点，卸载不在新节点中的节点，记录需要更新的节点
+      // 步骤2: 遍历旧节点，进行卸载或更新操作
       for (let j = s1; j <= oldChildrenEnd; j++) {
         const oldVNode = oldChildren[j]
+        
+        // 如果所有新节点都已处理完，剩余的旧节点都需要卸载
         if (patched >= toBePatched) {
-          // 所有新节点都已处理，剩余的旧节点都需要卸载
           unmount(oldVNode)
           continue
         }
         
         let newIndex: number | undefined
+        
+        // 尝试通过 key 查找对应的新节点
         if (oldVNode.key != null) {
           newIndex = keyToNewIndexMap.get(oldVNode.key)
         } else {
-          // 没有 key 的旧节点，尝试在剩余的新节点中查找相同类型的节点
+          // 没有 key 的节点，通过类型匹配在剩余未处理的新节点中查找
           for (let k = s2; k <= newChildrenEnd; k++) {
+            // 只查找还未被匹配的节点（newIndexToOldIndexMap[k - s2] === 0）
             if (newIndexToOldIndexMap[k - s2] === 0) {
               const newVNode = normalizeVNode(newChildren[k])
               if (isSameVNodeType(oldVNode, newVNode)) {
@@ -406,21 +416,21 @@ function baseCreateRenderer(options: RendererOptions): any {
         }
         
         if (newIndex === undefined) {
-          // 旧节点不存在于新节点中，卸载
+          // 旧节点在新节点中找不到对应项，需要卸载
           console.log('卸载不在新节点中的旧节点:', oldVNode.key)
           unmount(oldVNode)
         } else {
-          // 记录旧节点索引（+1 因为 0 表示新节点）
+          // 找到对应的新节点，记录映射关系（索引+1，避免与 0 混淆）
           newIndexToOldIndexMap[newIndex - s2] = j + 1
           
-          // 判断是否需要移动：如果当前新索引小于之前的最大索引，说明顺序乱了
+          // 判断节点顺序是否变化：如果当前新索引小于之前记录的最大索引，说明顺序乱了
           if (newIndex >= maxNewIndexSoFar) {
             maxNewIndexSoFar = newIndex
           } else {
-            moved = true
+            moved = true // 标记需要移动
           }
           
-          // patch 更新节点
+          // 递归 patch 更新节点
           const newVNode = normalizeVNode(newChildren[newIndex])
           console.log('更新已存在的节点:', oldVNode.key, '从索引', j, '到', newIndex)
           patch(oldVNode, newVNode, container, null)
@@ -428,15 +438,18 @@ function baseCreateRenderer(options: RendererOptions): any {
         }
       }
       
-      // 计算最长递增子序列（LIS）
+      // 步骤3: 计算最长递增子序列（LIS），优化 DOM 移动操作
+      // LIS 中的节点保持相对顺序不变，不需要移动
       const increasingNewIndexSequence = moved
         ? getSequence(newIndexToOldIndexMap)
         : []
       
-      let j = increasingNewIndexSequence.length - 1
-      // 从后向前遍历新节点，挂载新节点或移动已存在的节点
+      // 步骤4: 从后向前遍历新节点，执行挂载或移动操作
+      let j = increasingNewIndexSequence.length - 1 // LIS 指针，从末尾开始
+      
       for (let k = toBePatched - 1; k >= 0; k--) {
-        const nextIndex = s2 + k
+        const nextIndex = s2 + k // 新节点在完整列表中的实际索引
+        // 确定插入位置的锚点：下一个兄弟节点的 el，或者父节点的锚点
         const anchor = nextIndex + 1 < newChildren.length 
           ? normalizeVNode(newChildren[nextIndex + 1]).el 
           : parentAnchor
@@ -444,21 +457,27 @@ function baseCreateRenderer(options: RendererOptions): any {
         const newVNode = normalizeVNode(newChildren[nextIndex])
         
         if (newIndexToOldIndexMap[k] === 0) {
-          // 新节点，需要挂载
+          // 情况1: 新节点（在旧节点中不存在），需要挂载
           console.log('挂载新的有key节点:', newVNode.key)
           patch(null, newVNode, container, anchor)
         } else if (moved) {
-          // 需要移动的节点
-          // 如果当前索引不在 LIS 中，则需要移动
+          // 情况2: 已存在但可能需要移动的节点
+          // 如果当前索引不在 LIS 中，则需要移动到正确位置
           if (j < 0 || k !== increasingNewIndexSequence[j]) {
             console.log('移动节点:', newVNode.key, 'anchor:', anchor)
-            hostInsert(newVNode.el, container, anchor)
+            move(newVNode, container, anchor)
           } else {
+            // 在 LIS 中，顺序正确，无需移动，移动 LIS 指针
             j--
           }
         }
+        // 情况3: moved=false 且节点已存在，无需任何操作（已在步骤2中更新）
       }
     }
+  }
+  const move = (vnode: VNode, container:any, anchor: any)=>{
+    const {el} = vnode
+    hostInsert(el, container, anchor)
   }
   const patchProps = (
     el: Element,
