@@ -8,3 +8,4 @@ export {
   isSameVNodeType
 } from '@vue/runtime-core'
 export { render } from '@vue/runtime-dom'
+export { compile } from '@vue/compiler-core'

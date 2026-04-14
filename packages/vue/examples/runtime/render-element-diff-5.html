@@ -24,11 +24,11 @@
       render(vnode, document.querySelector('#app'))
       setTimeout(() => {
         const vnode2 = h('ul', { class: 'test' }, [
-          h('li', { key: '2' }, 'b'),
-          h('li', { key: '4' }, 'd'),
-          h('li', { key: '1' }, 'a'),
-          h('li', { key: '5' }, 'e'),
-          h('li', { key: '6' }, 'f')
+          h('li', { key: '2' }, 'new-b'),
+          h('li', { key: '6' }, 'new-f'),
+          h('li', { key: '4' }, 'new-d'),
+          h('li', { key: '1' }, 'new-a'),
+          h('li', { key: '5' }, 'new-e')
         ])
         render(vnode2, document.querySelector('#app'))
       }, 3000)
