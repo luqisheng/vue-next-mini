@@ -12,12 +12,17 @@ function creatParserContext(content: string): ParserContext {
     source: content
   }
 }
+export function createRoot(children:any) {
+  return {
+    type: NodeTypes.ROOT,
+    children,
+    loc: {}
+  }
+}
 export function baseParse(content: string) {
   const context = creatParserContext(content)
   const children = parseChildren(context, [])
-  console.log(content)
-  console.log(children,'1111111111111111111111111111')
-  return {}
+  return createRoot(children)
 }
 function parseChildren(context: ParserContext, ancestors: any) {
   const nodes: any[] = []
@@ -65,7 +70,7 @@ function parseTag(context: ParserContext, type: TagType) {
   return {
     type: NodeTypes.ELEMENT,
     tag,
-    TagType: ElementTypes.ELEMENT,
+    tagType: ElementTypes.ELEMENT,
     children: [] as any[],
     props: []
   }
@@ -81,7 +86,10 @@ function parseText(context: ParserContext) {
     }
   }
   const rawContext = parseTextData(context, endIndex)
-  return rawContext
+  return {
+    type: NodeTypes.TEXT,
+    content: rawContext
+  }
 }
 export function parseTextData(context: ParserContext, length: number) {
   const rawText = context.source.slice(0, length)
