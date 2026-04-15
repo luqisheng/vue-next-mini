@@ -100,6 +100,7 @@ function createChildrenCodegenNode(branch: any, keyIndex: number) {
   const ret = firstChild.codegenNode
   const vnodeCall = getMemoedVNodeCall(ret)
   injextProp(vnodeCall, keyProperty)
+  return ret
 }
 export function injextProp(node: any, prop: any) {
   let propsWithInjection

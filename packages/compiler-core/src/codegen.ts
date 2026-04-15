@@ -120,7 +120,7 @@ function genConditionalExpression(node: any, context: any) {
   const { test, alternate, consequent, newline: needNewline } = node
   const { push, indent, deindent, newline } = context
   if (test.type === NodeTypes.SIMPLE_EXPRESSION) {
-    genCompoundExpression(test, context)
+    genExpression(test, context)
   }
   needNewline && indent()
   context.indentLevel++

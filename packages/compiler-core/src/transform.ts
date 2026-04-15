@@ -69,6 +69,7 @@ export function traverseNode(node: any, context: TransformContext) {
 
   switch (node.type) {
     case NodeTypes.IF_BRANCH:
+      traverseChildren(node, context)
       break
     case NodeTypes.ELEMENT:
       traverseChildren(node, context)
@@ -140,6 +141,7 @@ export function createStructuralDirectiveTransform(
           if (onExit) exitFns.push(onExit)
         }
       }
+      return exitFns
     }
   }
 }
