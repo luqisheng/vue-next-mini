@@ -12,7 +12,7 @@ function creatParserContext(content: string): ParserContext {
     source: content
   }
 }
-export function createRoot(children:any) {
+export function createRoot(children: any) {
   return {
     type: NodeTypes.ROOT,
     children,
@@ -29,9 +29,9 @@ function parseChildren(context: ParserContext, ancestors: any) {
   while (!isEnd(context, ancestors)) {
     const s = context.source
     let node: any
-    if (s.startsWith('{{')) {
+    if (startsWith(s, '{{')) {
       node = parseInterpolation(context)
-    } else if (s.startsWith('<')) {
+    } else if (startsWith(s, '<')) {
       if (/[a-z]/i.test(s[1])) {
         node = parseElement(context, ancestors)
       }
@@ -123,17 +123,20 @@ function startsWithEndTagOpen(source: string, tag: string) {
 function parseInterpolation(context: ParserContext) {
   const openDelimiter = '{{'
   const closeDelimiter = '}}'
+  advance(context, openDelimiter.length)
   const closeIndex = context.source.indexOf(
     closeDelimiter,
     openDelimiter.length
   )
-  // 删除{{}}中间的内容
-  context.source = context.source.slice(openDelimiter.length, closeIndex)
+  const preTrimContent = parseTextData(context, closeIndex)
+  const content = preTrimContent.trim()
+  advance(context, closeDelimiter.length)
   return {
-    type: 2,
+    type: NodeTypes.INTERPOLATION,
     content: {
-      type: 3,
-      content: context.source.slice(0, closeIndex)
+      type: NodeTypes.SIMPLE_EXPRESSION,
+      isStatic: false,
+      content
     }
   }
 }
