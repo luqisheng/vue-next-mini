@@ -1,4 +1,8 @@
-import { helperNameMap, CREATE_ELEMENT_VNODE, TO_DISPLAY_STRING } from './runtimeHelpers'
+import {
+  helperNameMap,
+  CREATE_ELEMENT_VNODE,
+  TO_DISPLAY_STRING
+} from './runtimeHelpers'
 import { NodeTypes } from './ast'
 import { isString, isArray } from '@vue/shared'
 
@@ -54,10 +58,10 @@ export function generate(ast: any) {
   } else {
     push(`null`)
   }
-  
+
   deindent()
   push('}')
-  
+
   deindent()
   push('}')
   return {
@@ -87,12 +91,57 @@ function genNode(node: any, context: any) {
       genCompoundExpression(node, context)
       break
     case NodeTypes.ELEMENT:
-      genElement(node, context)
+    case NodeTypes.IF:
+      genNode(node.codegenNode, context)
       break
     case NodeTypes.VNODE_CALL:
       genVNodeCall(node, context)
       break
+    // 调用
+    case NodeTypes.JS_CALL_EXPRESSION:
+      genCallExpression(node, context)
+      break
+    // 条件
+    case NodeTypes.JS_CONDITIONAL_EXPRESSION:
+      genConditionalExpression(node, context)
+      break
   }
+}
+// genCallExpression
+function genCallExpression(node: any, context: any) {
+  const { push, helper } = context
+  const callee = isString(node.callee) ? node.callee : helper(node.callee)
+  push(callee + '(')
+  genNodeList(node.arguments, context)
+  push(')')
+}
+// genConditionalExpression
+function genConditionalExpression(node: any, context: any) {
+  const { test, alternate, consequent, newline: needNewline } = node
+  const { push, indent, deindent, newline } = context
+  if (test.type === NodeTypes.SIMPLE_EXPRESSION) {
+    genCompoundExpression(test, context)
+  }
+  needNewline && indent()
+  context.indentLevel++
+  needNewline || push(' ')
+  push('?')
+  genNode(consequent, context)
+  context.indentLevel--
+  needNewline && newline()
+  needNewline || push(' ')
+  push(':')
+
+  const isNested = alternate.type === NodeTypes.JS_CONDITIONAL_EXPRESSION
+  if (!isNested) {
+    context.indentLevel++
+  }
+  genNode(alternate, context)
+
+  if (!isNested) {
+    context.indentLevel--
+  }
+  needNewline && deindent()
 }
 
 // genText
@@ -114,7 +163,7 @@ function genVNodeCall(node: any, context: any) {
     disableTracking,
     isComponent
   } = node
-  
+
   // 使用正确的helper：CREATE_ELEMENT_VNODE
   push(`${helper(CREATE_ELEMENT_VNODE)}` + `(`)
   const args = genNullableArgs([
@@ -175,7 +224,7 @@ function genInterpolation(node: any, context: any) {
 // genExpression
 function genExpression(node: any, context: any) {
   const { push } = context
-  const {content,isStatic} = node
+  const { content, isStatic } = node
   push(isStatic ? JSON.stringify(content) : content)
 }
 // genCompoundExpression
@@ -190,9 +239,4 @@ function genCompoundExpression(node: any, context: any) {
       genNode(child, context)
     }
   }
-}
-// genElement
-function genElement(node: any, context: any) {
-  // Element节点在codegen阶段应该已经被转换为VNodeCall
-  // 这里留空或抛出错误
 }

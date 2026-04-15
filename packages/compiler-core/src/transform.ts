@@ -1,6 +1,7 @@
+import { isString,isArray } from '@vue/shared'
 import { NodeTypes } from './ast'
 import { isSingleElementRoot } from './hoistStatic'
-import { TO_DISPLAY_STRING } from "./runtimeHelpers"
+import { TO_DISPLAY_STRING } from './runtimeHelpers'
 
 export interface TransformContext {
   root: any
@@ -10,6 +11,7 @@ export interface TransformContext {
   helpers: Map<symbol, number>
   helper<T extends symbol>(name: T): T
   nodeTransforms: any[]
+  replaceNode(node: any): void
 }
 export function createTransformContext(root: any, { nodeTransforms = [] }) {
   const context: TransformContext = {
@@ -23,7 +25,10 @@ export function createTransformContext(root: any, { nodeTransforms = [] }) {
       context.helpers.set(name, count + 1)
       return name
     },
-    nodeTransforms
+    nodeTransforms,
+    replaceNode(node) {
+      context.parent!.children[context.childIndex] = context.currentNode = node
+    }
   }
   return context
 }
@@ -44,32 +49,48 @@ export function transform(root: any, options: any) {
 export function traverseNode(node: any, context: TransformContext) {
   const { nodeTransforms } = context
   context.currentNode = node
-  const exitsFns = []
+  const exitFns:any = []
   for (let i = 0; i < nodeTransforms.length; i++) {
     const transform = nodeTransforms[i]
     const onExit = transform(node, context)
     if (onExit) {
-      exitsFns.push(onExit)
+      if (isArray(onExit)) {
+        exitFns.push(...onExit)
+      } else {
+        exitFns.push(onExit)
+      }
+    }
+    if (!context.currentNode) {
+      return
+    }else{
+      node = context.currentNode
     }
   }
 
   switch (node.type) {
+    case NodeTypes.IF_BRANCH:
+      break
     case NodeTypes.ELEMENT:
-      // traverseChildren(node, context)
+      traverseChildren(node, context)
       break
     case NodeTypes.ROOT:
       traverseChildren(node, context)
+      break
     case NodeTypes.INTERPOLATION:
       context.helper(TO_DISPLAY_STRING)
       break
-
+    case NodeTypes.IF:
+      for (let index = 0; index < node.branches.length; index++) {
+        traverseNode(node.branches[index], context)
+      }
+      break
     default:
       break
   }
   context.currentNode = node
-  let i = exitsFns.length
+  let i = exitFns.length
   while (i--) {
-    exitsFns[i]()
+    exitFns[i]()
   }
 }
 
@@ -97,4 +118,28 @@ function createRootCodegen(root: any) {
   //     undefined,
   //     root.children
   // )
+}
+
+export function createStructuralDirectiveTransform(
+  name: string | RegExp,
+  fn: any
+) {
+  const matches = isString(name)
+    ? (n: string) => n === name
+    : (n: string) => name.test(n)
+  return (node: any, context: any) => {
+    if (node.type === NodeTypes.ELEMENT) {
+      const { props } = node
+      const exitFns = []
+      for (let i = 0; i < props.length; i++) {
+        const prop = props[i]
+        if (prop.type === NodeTypes.DIRECTIVE && matches(prop.name)) {
+          props.splice(i, 1)
+          i--
+          const onExit = fn(node, prop, context)
+          if (onExit) exitFns.push(onExit)
+        }
+      }
+    }
+  }
 }
