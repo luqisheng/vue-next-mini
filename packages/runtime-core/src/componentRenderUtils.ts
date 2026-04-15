@@ -2,11 +2,11 @@ import { createVNode, Text } from './vnode'
 import { ShapeFlags } from 'packages/shared/src/shapeFlags'
 
 export function renderComponentRoot(instance: any) {
-  const {vnode,render,data}=instance
+  const { vnode, render, data = {} } = instance
   let result
   try {
-    if(vnode.shapeFlag & ShapeFlags.STATEFUL_COMPONENT){
-      result = normalizeVNode(render!.call(data))
+    if (vnode.shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
+      result = normalizeVNode(render!.call(data,data))
     }
   } catch (error) {
     console.log(error)
@@ -21,6 +21,6 @@ export function normalizeVNode(child: any) {
   }
 }
 
-export function cloneIfMounted(child:any) {
+export function cloneIfMounted(child: any) {
   return child
 }

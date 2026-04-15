@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <script>
+        function render(_ctx){
+            with(_ctx){
+                console.log(msg)
+            }
+        }
+        const data = {
+            msg:'hello world'
+        }
+        // render.call(data)
+        render.call(data,data)
+    </script>
+</body>
+</html>

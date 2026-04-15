@@ -14,7 +14,7 @@
   <body>
     <div id="app"></div>
     <script>
-      const { compile, h,render } = Vue
+      const { compile, h, render } = Vue
       // 复合表达式
       const template = `<div>hello {{msg}}</div>`
       const renderFn = compile(template)
@@ -22,10 +22,15 @@
       const component = {
         data() {
           return {
-            msg:'world'
+            msg: 'world'
           }
         },
-        render: renderFn
+        render: renderFn,
+        created() {
+          setTimeout(() => {
+            this.msg = 'rocky'
+          }, 3000)
+        }
       }
       const vnode = h(component)
       render(vnode, document.querySelector('#app'))

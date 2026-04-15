@@ -6,7 +6,6 @@ import { transformText } from 'packages/compiler-core/src/transforms/transformTe
 import { generate } from 'packages/compiler-core/src/codegen'
 export function baseCompile(template: string, options: any = {}) {
   const ast = baseParse(template)
-  console.log(JSON.stringify(ast))
   transform(
     ast,
     extend(options, { nodeTransforms: [transformElement, transformText] })

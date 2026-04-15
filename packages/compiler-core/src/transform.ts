@@ -1,6 +1,6 @@
 import { NodeTypes } from './ast'
 import { isSingleElementRoot } from './hoistStatic'
-// import { CREATE_VNODE } from "./runtimeHelpers"
+import { TO_DISPLAY_STRING } from "./runtimeHelpers"
 
 export interface TransformContext {
   root: any
@@ -57,10 +57,11 @@ export function traverseNode(node: any, context: TransformContext) {
     case NodeTypes.ELEMENT:
       // traverseChildren(node, context)
       break
-    case NodeTypes.TEXT:
-    // traverseChildren(node, context)
     case NodeTypes.ROOT:
       traverseChildren(node, context)
+    case NodeTypes.INTERPOLATION:
+      context.helper(TO_DISPLAY_STRING)
+      break
 
     default:
       break
