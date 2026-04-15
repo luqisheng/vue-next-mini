@@ -1,7 +1,6 @@
-import { helperNameMap } from './runtimeHelpers'
+import { helperNameMap, CREATE_ELEMENT_VNODE } from './runtimeHelpers'
 import { NodeTypes } from './ast'
 import { isString, isArray } from '@vue/shared'
-import { getVNodeHelper } from './utils'
 
 const aliasHelper = (s: symbol) => `${helperNameMap[s]}:_${helperNameMap[s]}`
 function createCodegenContext(ast: any) {
@@ -12,7 +11,7 @@ function createCodegenContext(ast: any) {
     indextLevel: 0,
     isSSR: false,
     helper(key: any) {
-      return `_${helperNameMap[key]}}`
+      return `_${helperNameMap[key]}`
     },
     push(code: any) {
       context.code += code
@@ -107,8 +106,9 @@ function genVNodeCall(node: any, context: any) {
     disableTracking,
     isComponent
   } = node
-  const callHelper = getVNodeHelper(context.isSSR, isComponent)
-  push(`${helper(node.tag)}` + `(`) // 引入aliasHelper
+  
+  // 使用正确的helper：CREATE_ELEMENT_VNODE
+  push(`${helper(CREATE_ELEMENT_VNODE)}` + `(`)
   const args = genNullableArgs([
     tag,
     props,

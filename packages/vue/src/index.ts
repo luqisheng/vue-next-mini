@@ -5,7 +5,8 @@ export {
   h,
   Text,
   Fragment,
-  isSameVNodeType
+  isSameVNodeType,
+  createElementVNode
 } from '@vue/runtime-core'
 export { render } from '@vue/runtime-dom'
-export { compile } from '@vue/compiler-core'
+export { compile } from '@vue/vue-compat'

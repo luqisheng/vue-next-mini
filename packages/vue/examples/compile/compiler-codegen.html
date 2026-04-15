@@ -17,7 +17,12 @@
       const { compile, h,render } = Vue
       const template = `<div>hello world</div>`
       const renderFn = compile(template)
-      console.log(renderFn.code)
+      console.log(renderFn)
+      const component = {
+        render: renderFn
+      }
+      const vnode = h(component)
+      render(vnode, document.querySelector('#app'))
     </script>
   </body>
 </html>

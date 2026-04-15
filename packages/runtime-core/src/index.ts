@@ -1,5 +1,5 @@
 export { queuePreFlushCb } from './scheduler'
 export { watch } from './apiWatch'
 export { h } from './h'
-export { Text, Fragment } from './vnode'
+export { Text, Fragment,createElementVNode } from './vnode'
 export { isSameVNodeType } from './vnode'
