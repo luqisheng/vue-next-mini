@@ -16,7 +16,7 @@
     <script>
       const { compile, h, render } = Vue
       // 复合表达式
-      const template = `<div><p>hello world</p><p v-if="isShow">你好世界</p></div>`
+      const template = `<div>hello world<p v-if="isShow">你好世界</p></div>`
       const renderFn = compile(template)
       console.log(renderFn)
       const component = {
@@ -25,7 +25,12 @@
             isShow: true
           }
         },
-        render: renderFn
+        render: renderFn,
+        created() {
+          setTimeout(()=>{
+            this.isShow = false
+          },3000)
+        },
       }
       const vnode = h(component)
       render(vnode, document.querySelector('#app'))

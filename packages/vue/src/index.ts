@@ -5,8 +5,10 @@ export {
   h,
   Text,
   Fragment,
+  Comment,
   isSameVNodeType,
-  createElementVNode
+  createElementVNode,
+  createCommentVNode as createComment
 } from '@vue/runtime-core'
 export { render } from '@vue/runtime-dom'
 export { compile } from '@vue/vue-compat'

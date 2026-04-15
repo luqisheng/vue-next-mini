@@ -512,6 +512,11 @@ function baseCreateRenderer(options: RendererOptions): any {
     }
   }
   const unmount = (vnode: any) => {
+    // 防御性检查：确保 vnode.el 存在且已挂载到 DOM
+    if (!vnode || !vnode.el) {
+      console.warn('Attempting to unmount a vnode without el property:', vnode)
+      return
+    }
     const parent = vnode.el.parentNode
     if (parent) {
       hostRemove(vnode.el)

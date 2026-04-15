@@ -2,9 +2,10 @@ import { isString, isObject, isArray } from '@vue/shared'
 import { normalizeClass, normalizeStyle } from './normalizeProp'
 import { ShapeFlags } from 'packages/shared/src/shapeFlags'
 // VNode types
-export const Text = Symbol.for('Text')
-export const Fragment = Symbol.for('Fragment')
-export const ELEMENT = Symbol.for('Element')
+export const Text = Symbol('Text')
+export const Fragment = Symbol('Fragment')
+export const Comment = Symbol('Comment')
+export const ELEMENT = Symbol('Element')
 
 export interface VNode {
   __v_isVNode: true
@@ -38,6 +39,14 @@ export function createVNode(type: any, props?: any, children?: any): VNode {
 }
 
 export { createVNode as createElementVNode }
+
+export function createCommentVNode(text: string = ''): VNode {
+  debugger
+  return createBaseVNode(Comment, null, text, 0)
+}
+
+// 为了与编译器生成的代码兼容，导出别名
+export { createCommentVNode as createComment }
 
 function createBaseVNode(
   type: any,
