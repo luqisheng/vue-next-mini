@@ -1,3 +1,4 @@
+import { CREATE_ELEMENT_VNODE } from './runtimeHelpers'
 export enum NodeTypes {
   ROOT,
   ELEMENT,
@@ -29,12 +30,28 @@ export enum NodeTypes {
   JS_IF_STATEMENT,
   JS_ASSIGNMENT_EXPRESSION,
   JS_SEQUENCE_EXPRESSION,
-  JS_RETURN_STATEMENT,
+  JS_RETURN_STATEMENT
 }
 
 export enum ElementTypes {
   ELEMENT,
   COMPONENT,
   SLOT,
-  TEMPLATE,
+  TEMPLATE
+}
+export function createVNodeCall(
+  context: any,
+  tag: any,
+  props?: any,
+  children?: any
+) {
+  if (context) {
+    context.helper(CREATE_ELEMENT_VNODE)
+  }
+  return {
+    type: NodeTypes.VNODE_CALL,
+    tag,
+    props,
+    children
+  }
 }
