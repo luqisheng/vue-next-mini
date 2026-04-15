@@ -6,7 +6,7 @@ import { createComponentInstance, setupComponent } from './component'
 import { ReactiveEffect } from '@vue/reactivity'
 import { queuePreFlushCb } from './scheduler'
 import { ShapeFlags } from 'packages/shared/src/shapeFlags'
-
+import { createAppAPI } from './apiCreateApp'
 export interface RendererOptions {
   //   设置element的属性props打补丁
   patchProp(el: Element, key: string, prevValue: any, nextValue: any): void
@@ -586,5 +586,5 @@ function baseCreateRenderer(options: RendererOptions): any {
       container._vnode = vnode
     }
   }
-  return { render }
+  return { render, createApp: createAppAPI(render) }
 }
