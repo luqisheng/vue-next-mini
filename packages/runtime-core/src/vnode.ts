@@ -41,12 +41,8 @@ export function createVNode(type: any, props?: any, children?: any): VNode {
 export { createVNode as createElementVNode }
 
 export function createCommentVNode(text: string = ''): VNode {
-  debugger
-  return createBaseVNode(Comment, null, text, 0)
+  return createVNode(Comment, null, text)
 }
-
-// 为了与编译器生成的代码兼容，导出别名
-export { createCommentVNode as createComment }
 
 function createBaseVNode(
   type: any,

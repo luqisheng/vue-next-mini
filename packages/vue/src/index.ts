@@ -8,7 +8,7 @@ export {
   Comment,
   isSameVNodeType,
   createElementVNode,
-  createCommentVNode as createComment
+  createCommentVNode
 } from '@vue/runtime-core'
 export { render } from '@vue/runtime-dom'
 export { compile } from '@vue/vue-compat'

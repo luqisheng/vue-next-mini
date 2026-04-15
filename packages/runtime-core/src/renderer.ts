@@ -1,6 +1,6 @@
 import { EMPTY_OBJ, isString } from '@vue/shared'
 import type { VNode } from './vnode'
-import { Fragment, Text, isSameVNodeType } from './vnode'
+import { Fragment, Text, Comment, isSameVNodeType } from './vnode'
 import { normalizeVNode, renderComponentRoot } from './componentRenderUtils'
 import { createComponentInstance, setupComponent } from './component'
 import { ReactiveEffect } from '@vue/reactivity'
@@ -259,18 +259,18 @@ function baseCreateRenderer(options: RendererOptions): any {
   const getSequence = (arr: number[]): number[] => {
     const result = [0]
     const predecessors = arr.slice()
-    
+
     for (let i = 0; i < arr.length; i++) {
       const arrI = arr[i]
       if (arrI === 0) continue
-      
+
       const resultLastIndex = result[result.length - 1]
       if (arr[resultLastIndex] < arrI) {
         predecessors[i] = resultLastIndex
         result.push(i)
         continue
       }
-      
+
       let start = 0
       let end = result.length - 1
       while (start < end) {
@@ -281,7 +281,7 @@ function baseCreateRenderer(options: RendererOptions): any {
           end = mid
         }
       }
-      
+
       if (arrI < arr[result[start]]) {
         if (start > 0) {
           predecessors[i] = result[start - 1]
@@ -289,14 +289,14 @@ function baseCreateRenderer(options: RendererOptions): any {
         result[start] = i
       }
     }
-    
+
     let len = result.length
     let last = result[len - 1]
     while (len-- > 0) {
       result[len] = last
       last = predecessors[last]
     }
-    
+
     return result
   }
 
@@ -309,7 +309,7 @@ function baseCreateRenderer(options: RendererOptions): any {
     let i = 0
     let oldChildrenEnd = oldChildren.length - 1
     let newChildrenEnd = newChildren.length - 1
-    
+
     // 1. 从前向后同步
     while (i <= oldChildrenEnd && i <= newChildrenEnd) {
       const oldVNode = oldChildren[i]
@@ -340,7 +340,8 @@ function baseCreateRenderer(options: RendererOptions): any {
       if (i <= newChildrenEnd) {
         // 锚点：下一个节点的 el，如果是最后一个则为 parentAnchor
         const nextPos = newChildrenEnd + 1
-        const anchor = nextPos < newChildren.length ? newChildren[nextPos].el : parentAnchor
+        const anchor =
+          nextPos < newChildren.length ? newChildren[nextPos].el : parentAnchor
         while (i <= newChildrenEnd) {
           patch(null, normalizeVNode(newChildren[i]), container, anchor)
           i++
@@ -355,14 +356,21 @@ function baseCreateRenderer(options: RendererOptions): any {
       }
     }
     // 5. 未知序列（中间乱序）- 使用 LIS 优化
-    else { 
-      console.log('处理未知序列，i:', i, 'oldChildrenEnd:', oldChildrenEnd, 'newChildrenEnd:', newChildrenEnd)
-      
+    else {
+      console.log(
+        '处理未知序列，i:',
+        i,
+        'oldChildrenEnd:',
+        oldChildrenEnd,
+        'newChildrenEnd:',
+        newChildrenEnd
+      )
+
       // s1: 旧子节点列表中待处理节点的起始索引
       const s1 = i
       // s2: 新子节点列表中待处理节点的起始索引
       const s2 = i
-      
+
       // 步骤1: 创建新节点的 key -> index 映射表，用于快速查找
       const keyToNewIndexMap = new Map()
       for (let j = s2; j <= newChildrenEnd; j++) {
@@ -371,33 +379,33 @@ function baseCreateRenderer(options: RendererOptions): any {
           keyToNewIndexMap.set(newVNode.key, j)
         }
       }
-      
+
       // 需要处理的节点总数（新节点数量）
       const toBePatched = newChildrenEnd - s2 + 1
       let patched = 0 // 已处理的节点计数
-      
+
       // newIndexToOldIndexMap: 记录每个新节点对应的旧节点索引
       // 值为 0 表示该新节点在旧节点中不存在（需要挂载）
       // 值为 j+1 表示对应旧节点数组中的索引 j（+1 是为了区分 0）
       const newIndexToOldIndexMap = new Array(toBePatched).fill(0)
-      
+
       // moved: 标记节点顺序是否发生变化
       let moved = false
       // maxNewIndexSoFar: 记录遍历过程中遇到的最大新索引，用于判断是否需要移动
       let maxNewIndexSoFar = 0
-      
+
       // 步骤2: 遍历旧节点，进行卸载或更新操作
       for (let j = s1; j <= oldChildrenEnd; j++) {
         const oldVNode = oldChildren[j]
-        
+
         // 如果所有新节点都已处理完，剩余的旧节点都需要卸载
         if (patched >= toBePatched) {
           unmount(oldVNode)
           continue
         }
-        
+
         let newIndex: number | undefined
-        
+
         // 尝试通过 key 查找对应的新节点
         if (oldVNode.key != null) {
           newIndex = keyToNewIndexMap.get(oldVNode.key)
@@ -414,7 +422,7 @@ function baseCreateRenderer(options: RendererOptions): any {
             }
           }
         }
-        
+
         if (newIndex === undefined) {
           // 旧节点在新节点中找不到对应项，需要卸载
           console.log('卸载不在新节点中的旧节点:', oldVNode.key)
@@ -422,40 +430,48 @@ function baseCreateRenderer(options: RendererOptions): any {
         } else {
           // 找到对应的新节点，记录映射关系（索引+1，避免与 0 混淆）
           newIndexToOldIndexMap[newIndex - s2] = j + 1
-          
+
           // 判断节点顺序是否变化：如果当前新索引小于之前记录的最大索引，说明顺序乱了
           if (newIndex >= maxNewIndexSoFar) {
             maxNewIndexSoFar = newIndex
           } else {
             moved = true // 标记需要移动
           }
-          
+
           // 递归 patch 更新节点
           const newVNode = normalizeVNode(newChildren[newIndex])
-          console.log('更新已存在的节点:', oldVNode.key, '从索引', j, '到', newIndex)
+          console.log(
+            '更新已存在的节点:',
+            oldVNode.key,
+            '从索引',
+            j,
+            '到',
+            newIndex
+          )
           patch(oldVNode, newVNode, container, null)
           patched++
         }
       }
-      
+
       // 步骤3: 计算最长递增子序列（LIS），优化 DOM 移动操作
       // LIS 中的节点保持相对顺序不变，不需要移动
       const increasingNewIndexSequence = moved
         ? getSequence(newIndexToOldIndexMap)
         : []
-      
+
       // 步骤4: 从后向前遍历新节点，执行挂载或移动操作
       let j = increasingNewIndexSequence.length - 1 // LIS 指针，从末尾开始
-      
+
       for (let k = toBePatched - 1; k >= 0; k--) {
         const nextIndex = s2 + k // 新节点在完整列表中的实际索引
         // 确定插入位置的锚点：下一个兄弟节点的 el，或者父节点的锚点
-        const anchor = nextIndex + 1 < newChildren.length 
-          ? normalizeVNode(newChildren[nextIndex + 1]).el 
-          : parentAnchor
-        
+        const anchor =
+          nextIndex + 1 < newChildren.length
+            ? normalizeVNode(newChildren[nextIndex + 1]).el
+            : parentAnchor
+
         const newVNode = normalizeVNode(newChildren[nextIndex])
-        
+
         if (newIndexToOldIndexMap[k] === 0) {
           // 情况1: 新节点（在旧节点中不存在），需要挂载
           console.log('挂载新的有key节点:', newVNode.key)
@@ -475,8 +491,8 @@ function baseCreateRenderer(options: RendererOptions): any {
       }
     }
   }
-  const move = (vnode: VNode, container:any, anchor: any)=>{
-    const {el} = vnode
+  const move = (vnode: VNode, container: any, anchor: any) => {
+    const { el } = vnode
     hostInsert(el, container, anchor)
   }
   const patchProps = (
@@ -537,11 +553,13 @@ function baseCreateRenderer(options: RendererOptions): any {
       oldVNode = null
     }
     const { type, shapeFlag } = newVNode
+    console.log('patchElement', type)
     switch (type) {
       case Text:
         processText(oldVNode, newVNode, container, anchor)
         break
       case Comment:
+        console.log('patchCommentNode', newVNode)
         processCommentNode(oldVNode, newVNode, container, anchor)
         break
       case Fragment:
