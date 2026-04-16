@@ -2,6 +2,7 @@ import { reactive } from '@vue/reactivity'
 import { isFunction, isObject } from 'packages/shared/src/index'
 import { onBeforeMount, onMounted } from './apiLifecycle'
 let uid = 0
+let compile:any =null
 export function createComponentInstance(vnode: any) {
   const type = vnode.type
   const instance = {
@@ -48,12 +49,20 @@ export function handleSetupResult(instance: any, setupResult: any) {
 export function finishComponentSetup(instance: any) {
   const Component = instance.type
   if (!instance.render) {
+    if(compile&&!Component.render){
+      if (Component.template) {
+        const template = Component.template
+        Component.render = compile(template)
+      }
+    }
     instance.render = Component.render
   }
 
   applyOptions(instance)
 }
-
+export function registerRuntimeCompiler(_compile: any) { 
+  compile = _compile
+}
 function applyOptions(instance: any) {
   const {
     data: dataOptions,
